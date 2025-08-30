@@ -11,16 +11,22 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
+import { signup } from "@/api/auth"
 
 export default function SignupPage() {
+  const[name, setName]= useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [role, setRole] = useState("")
+  const [classroomId, setClassroomId] = useState("")
+
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
 
+
+  console.log(role);
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -28,6 +34,14 @@ export default function SignupPage() {
       toast({
         title: "Error",
         description: "Please fill in all fields",
+        variant: "destructive",
+      })
+      return
+    }
+     if (role === "student" && !classroomId) {
+      toast({
+        title: "Error",
+        description: "Please enter classroom ID",
         variant: "destructive",
       })
       return
@@ -44,33 +58,41 @@ export default function SignupPage() {
 
     setIsLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      // Store user data in localStorage (simulate authentication)
-      const userData = {
-        email,
-        role,
-        id: Math.random().toString(36).substr(2, 9),
-        name: email.split("@")[0],
-      }
+     try {
+    const data = await signup({
+      name,
+      email,
+      password,
+      role: role as "teacher" | "student",
+      classroomId: role === "student" ? Number(classroomId) : undefined,
+    })
 
-      localStorage.setItem("user", JSON.stringify(userData))
+    toast({
+      title: "Success",
+      description: "Account created successfully",
+    })
 
-      toast({
-        title: "Success",
-        description: "Account created successfully",
-      })
+    // Now redirect based on the role returned from the backend
+    if (data.role.toLowerCase() === "teacher") {
+      router.push("/teacher/dashboard")
+    } else if (data.role.toLowerCase() === "student") {
+      router.push("/student/dashboard")
+    } else {
+      router.push("/")
+    }
 
-      // Redirect based on role
-      if (role === "teacher") {
-        router.push("/teacher/dashboard")
-      } else {
-        router.push("/student/dashboard")
-      }
-
-      setIsLoading(false)
-    }, 1000)
+  } catch (error: any) {
+    toast({
+      title: "Signup failed",
+      description: error.message || "Unknown error",
+      variant: "destructive",
+    })
+  } finally {
+    setIsLoading(false)
   }
+}
+
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -129,6 +151,22 @@ export default function SignupPage() {
                 </SelectContent>
               </Select>
             </div>
+
+          
+
+           {
+            role=="student" && 
+             <div className="space-y-2">
+              <Label htmlFor="classroomId">Classroom Id</Label>
+              <Input
+                id="classroomId"
+                placeholder="Id your Teacher shared "
+                value={classroomId}
+                onChange={(e) => setClassroomId(e.target.value)}
+                required
+              />
+            </div>
+           }
 
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Creating Account..." : "Sign Up"}
