@@ -26,11 +26,11 @@ export default function SignupPage() {
   const { toast } = useToast()
 
 
-  console.log(role);
   const handleSignup = async (e: React.FormEvent) => {
+    console.log(1);
     e.preventDefault()
 
-    if (!email || !password || !confirmPassword || !role) {
+    if (!name || !email || !password || !confirmPassword || !role) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -59,6 +59,8 @@ export default function SignupPage() {
     setIsLoading(true)
 
      try {
+          console.log(2);
+
     const data = await signup({
       name,
       email,
@@ -72,8 +74,22 @@ export default function SignupPage() {
       description: "Account created successfully",
     })
 
+
+    const userObject = {
+      id: data.userId,
+      email: email, // Use the email from state
+      name: name,   // Use the name from state
+      role: data.role.toLowerCase(), // Ensure role is lowercase to match AuthGuard's logic
+    }
+    localStorage.setItem("user", JSON.stringify(userObject))
+
+    console.log(data);
+    console.log(data.role)
     // Now redirect based on the role returned from the backend
+        console.log("Lowercased role:", data.role.toLowerCase()); 
+
     if (data.role.toLowerCase() === "teacher") {
+      console.log(true);
       router.push("/teacher/dashboard")
     } else if (data.role.toLowerCase() === "student") {
       router.push("/student/dashboard")
@@ -103,6 +119,17 @@ export default function SignupPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignup} className="space-y-4">
+           <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Enter your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
